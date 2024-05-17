@@ -1,0 +1,14 @@
+[Unit]
+Description=Binance Trade Bot - Binance1
+After=network.target
+
+[Service]
+ExecStart=/home/ubuntu/venv/binance/bin/python -u -m binance_trade_bot
+WorkingDirectory=/home/ubuntu/binance1/binance-trade-bot
+StandardOutput=inherit
+StandardError=inherit
+Restart=on-failure
+User=ubuntu
+
+[Install]
+WantedBy=multi-user.target

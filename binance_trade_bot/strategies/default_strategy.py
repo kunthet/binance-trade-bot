@@ -10,6 +10,7 @@ class Strategy(AutoTrader):
         super().initialize()
         self.initialize_current_coin()
 
+
     def scout(self):
         """
         Scout for potential jumps from the current coin to another coin
@@ -24,6 +25,8 @@ class Strategy(AutoTrader):
         )
 
         current_coin_price = self.manager.get_ticker_price(current_coin + self.config.BRIDGE)
+        
+        self.notify_user_current_coint(current_coin, current_coin_price)
 
         if current_coin_price is None:
             self.logger.info(f"Skipping scouting... current coin {current_coin + self.config.BRIDGE} not found")

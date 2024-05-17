@@ -22,9 +22,21 @@ class AutoTrader:
         self.db = database
         self.logger = logger
         self.config = config
+        self.current_coin_tracker = None
+        self.current_coin_tracker_timer: datetime = datetime.now()
 
     def initialize(self):
         self.initialize_trade_thresholds()
+
+    def notify_user_current_coint(self, current_coin, current_coin_price, interval_seconds=60):
+        duration = (datetime.now() - self.current_coin_tracker_timer).total_seconds()
+
+        if current_coin == self.current_coin_tracker and duration < interval_seconds: return
+        
+        message = f"Current coin {current_coin}: {current_coin_price} {self.config.BRIDGE}"
+        self.logger.info(message)
+        self.current_coin_tracker = current_coin
+        self.current_coin_tracker_timer = datetime.now()
 
     def transaction_through_bridge(self, pair: Pair):
         """
