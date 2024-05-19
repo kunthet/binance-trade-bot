@@ -4,6 +4,13 @@
 folder=binance1
 pyenv=~/venv/binance
 
+## To add ssh key on gcloud:
+# gcloud compute os-login ssh-keys add \
+#    --key-file=KEY_FILE_PATH \
+#    --project=PROJECT \
+#    --ttl=EXPIRE_TIME
+
+
 sudo apt-get update --yes
 
 # install Git
