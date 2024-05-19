@@ -30,11 +30,13 @@ class AutoTrader:
 
     def notify_user_current_coint(self, current_coin, current_coin_price, interval_seconds=60):
         duration = (datetime.now() - self.current_coin_tracker_timer).total_seconds()
-
-        if current_coin == self.current_coin_tracker and duration < interval_seconds: return
         
-        message = f"Current coin {current_coin}: {current_coin_price} {self.config.BRIDGE}"
+        if duration < interval_seconds: return
+        
+        balance = self.manager.get_currency_balance(self.config.BRIDGE.symbol)
+        message = f"Current coin {current_coin}: {current_coin_price} \nBALANCES: {balance} {self.config.BRIDGE.symbol}" 
         self.logger.info(message)
+
         self.current_coin_tracker = current_coin
         self.current_coin_tracker_timer = datetime.now()
 

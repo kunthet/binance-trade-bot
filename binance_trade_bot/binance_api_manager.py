@@ -329,6 +329,13 @@ class BinanceAPIManager:
         from_coin_price_s = "{:0.0{}f}".format(from_coin_price, pair_info["quotePrecision"])
 
         order_quantity = self._sell_quantity(origin_symbol, target_symbol, origin_balance)
+        self.logger.info(f"selling {origin_coin.symbol} | {type(origin_coin)} | {type(origin_coin.symbol)}")
+        
+        # Do not sell all BNB. Keep some for paying fees
+        if (origin_coin.symbol == "BNB"):
+            self.logger.info(f"BNB: Selling {origin_balance-0.02}/{origin_balance}")
+            origin_balance -= 0.02
+
         order_quantity_s = "{:0.0{}f}".format(order_quantity, pair_info["baseAssetPrecision"])
         self.logger.info(f"Selling {order_quantity} of {origin_symbol}")
 

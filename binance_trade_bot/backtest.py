@@ -5,6 +5,8 @@ from typing import Dict
 
 from sqlitedict import SqliteDict
 
+from binance_trade_bot.auto_trader import AutoTrader
+
 from .binance_api_manager import BinanceAPIManager
 from .binance_stream_manager import BinanceOrder
 from .config import Config
@@ -24,11 +26,16 @@ class MockBinanceManager(BinanceAPIManager):
         logger: Logger,
         start_date: datetime = None,
         start_balances: Dict[str, float] = None,
+        trader: AutoTrader = None,
     ):
         super().__init__(config, db, logger)
         self.config = config
         self.datetime = start_date or datetime(2021, 1, 1)
         self.balances = start_balances or {config.BRIDGE.symbol: 100}
+        self.trader = trader
+
+    def set_trader(self,trader: AutoTrader):
+        self.trader = trader
 
     def setup_websockets(self):
         pass  # No websockets are needed for backtesting
@@ -192,7 +199,8 @@ def backtest(
         return manager
     trader = strategy(manager, db, logger, config)
     trader.initialize()
-
+    
+    manager.set_trader(trader)
     yield manager
 
     n = 1
@@ -200,6 +208,7 @@ def backtest(
         while manager.datetime < end_date:
             try:
                 trader.scout()
+                
             except Exception:  # pylint: disable=broad-except
                 logger.warning(format_exc())
             manager.increment(interval)
