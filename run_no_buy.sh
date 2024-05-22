@@ -1,0 +1,1 @@
+/home/kunth/venv/binance/bin/python3 -m binance_trade_bot --create-db-only

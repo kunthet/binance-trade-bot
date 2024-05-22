@@ -1,1 +1,1 @@
-nohup /home/ubuntu/venv/binance/bin/python -u -m binance_trade_bot &
+nohup /home/kunth/venv/binance/bin/python3 -u -m binance_trade_bot &

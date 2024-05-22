@@ -6,9 +6,10 @@ from binance_trade_bot.auto_trader import AutoTrader
 
 
 class Strategy(AutoTrader):
-    def initialize(self):
+    def initialize(self, initialize_current_coin=True):
         super().initialize()
-        self.initialize_current_coin()
+        if initialize_current_coin: 
+            self.initialize_current_coin()
 
 
     def scout(self):
@@ -18,19 +19,26 @@ class Strategy(AutoTrader):
         current_coin = self.db.get_current_coin()
         # Display on the console, the current coin+Bridge, so users can see *some* activity and not think the bot has
         # stopped. Not logging though to reduce log size.
-        print(
-            f"{datetime.now()} - CONSOLE - INFO - I am scouting the best trades. "
-            f"Current coin: {current_coin + self.config.BRIDGE} ",
-            end="\r",
-        )
+        # interval_seconds = 600
+        # now = datetime.now()
+        # duration = (now - self.current_coin_tracker_timer).total_seconds()
+        # if duration >= interval_seconds: 
+        #     print(
+        #         f"{now} - CONSOLE - INFO - I am scouting the best trades. "
+        #         f"Current coin: {current_coin + self.config.BRIDGE} ",
+        #         end="\r",
+        #     )
+        #     self.current_coin_tracker_timer = now
 
         current_coin_price = self.manager.get_ticker_price(current_coin + self.config.BRIDGE)
         
-        self.notify_user_current_coint(current_coin, current_coin_price)
+        
 
         if current_coin_price is None:
             self.logger.info(f"Skipping scouting... current coin {current_coin + self.config.BRIDGE} not found")
             return
+        
+        self.notify_user_current_coint(current_coin, current_coin_price)
 
         self._jump_to_best_coin(current_coin, current_coin_price)
 
@@ -49,10 +57,12 @@ class Strategy(AutoTrader):
         """
         Decide what is the current coin, and set it up in the DB.
         """
+        current_coin_symbol = None
         if self.db.get_current_coin() is None:
             current_coin_symbol = self.config.CURRENT_COIN_SYMBOL
             if not current_coin_symbol:
-                current_coin_symbol = random.choice(self.config.SUPPORTED_COIN_LIST)
+                # current_coin_symbol = random.choice(self.config.SUPPORTED_COIN_LIST)
+                current_coin_symbol = self.find_best_coin_to_start()
 
             self.logger.info(f"Setting initial coin to {current_coin_symbol}")
 
@@ -66,3 +76,5 @@ class Strategy(AutoTrader):
                 self.logger.info(f"Purchasing {current_coin} to begin trading")
                 self.manager.buy_alt(current_coin, self.config.BRIDGE)
                 self.logger.info("Ready to start trading")
+
+        self.logger.info(f"Done initializing current coin to {current_coin_symbol}")

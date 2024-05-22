@@ -1,5 +1,6 @@
 #!python3
 import time
+import sys
 
 from .binance_api_manager import BinanceAPIManager
 from .config import Config
@@ -12,6 +13,10 @@ from .strategies import get_strategy
 def main():
     logger = Logger()
     logger.info("Starting")
+    args = sys.argv
+    create_db_only = "--create-db-only" in args
+    print(args)
+
 
     config = Config()
     db = Database(logger, config)
@@ -36,7 +41,15 @@ def main():
     db.set_coins(config.SUPPORTED_COIN_LIST)
     db.migrate_old_state()
 
-    trader.initialize()
+    trader.initialize(initialize_current_coin=(not create_db_only))
+
+    
+    trader.update_values()
+    best_coin = trader.find_best_coin_to_start()
+    print(f"Best coin to start: {best_coin}")
+
+    if create_db_only:     
+        return 
 
     schedule = SafeScheduler(logger)
     schedule.every(config.SCOUT_SLEEP_TIME).seconds.do(trader.scout).tag("scouting")

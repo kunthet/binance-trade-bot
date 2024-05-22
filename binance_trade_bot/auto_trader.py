@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import Dict, List
+import operator
 
 from sqlalchemy.orm import Session
 
@@ -28,13 +29,23 @@ class AutoTrader:
     def initialize(self):
         self.initialize_trade_thresholds()
 
-    def notify_user_current_coint(self, current_coin, current_coin_price, interval_seconds=60):
-        duration = (datetime.now() - self.current_coin_tracker_timer).total_seconds()
-        
+    def notify_user_current_coint(self, current_coin, current_coin_price, interval_seconds=600):
+        if current_coin is None: return
+
+        now = datetime.now()
+        duration = (now - self.current_coin_tracker_timer).total_seconds()
         if duration < interval_seconds: return
-        
-        balance = self.manager.get_currency_balance(self.config.BRIDGE.symbol)
-        message = f"Current coin {current_coin}: {current_coin_price} \nBALANCES: {balance} {self.config.BRIDGE.symbol}" 
+
+        print(
+            f"{now} - CONSOLE - INFO - I am scouting the best trades. "
+            f"Current coin: {current_coin + self.config.BRIDGE} ",
+            end="\r",
+        )
+
+        balance = self.manager.get_currency_balance(current_coin.symbol)
+        balance *= current_coin_price
+        balance += self.manager.get_currency_balance(self.config.BRIDGE.symbol)
+        message = f"Current coin {current_coin.symbol}: {current_coin_price} \nBALANCES: {balance} {self.config.BRIDGE.symbol}" 
         self.logger.info(message)
 
         self.current_coin_tracker = current_coin
@@ -93,6 +104,7 @@ class AutoTrader:
         Initialize the buying threshold of all the coins for trading between them
         """
         session: Session
+        i = 0
         with self.db.db_session() as session:
             for pair in session.query(Pair).filter(Pair.ratio.is_(None)).all():
                 if not pair.from_coin.enabled or not pair.to_coin.enabled:
@@ -108,8 +120,10 @@ class AutoTrader:
                 if to_coin_price is None:
                     self.logger.info(f"Skipping initializing {pair.to_coin + self.config.BRIDGE}, symbol not found")
                     continue
-
+                
                 pair.ratio = from_coin_price / to_coin_price
+                i += 1
+        self.logger.info(f"Done initializing database and created {i} coin pairs.")
 
     def scout(self):
         """
@@ -204,3 +218,19 @@ class AutoTrader:
                 cv = CoinValue(coin, balance, usd_value, btc_value, datetime=now)
                 session.add(cv)
                 self.db.send_update(cv)
+
+    def find_best_coin_to_start(self):
+        now = datetime.now()
+        coins = self.config.SUPPORTED_COIN_LIST
+        coins_dict = {c:-1000 for c in coins}
+        pairs = [Pair]
+
+        with self.db.db_session() as session:
+            pairs = session.query(Pair).all()
+
+            for coin in coins:
+                ratios = [p.ratio for p in pairs if p.to_coin.symbol == coin]
+                coins_dict[coin] = sum(ratios) / len(ratios)
+            coins_list = sorted(coins_dict.items(), key=lambda x: x[1], reverse=True)
+            return coins_list[0][0]
+        
